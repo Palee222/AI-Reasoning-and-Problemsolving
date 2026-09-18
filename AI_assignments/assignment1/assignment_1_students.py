@@ -876,11 +876,8 @@ def expand(problem, node, cost="distance_km"):
 def bfs(problem, trace=False):
     """
     Selection rule: shallowest node first
-
     Frontier: FIFO queue
-
     Repeated states: ignored once reached
-
     Goal test: when a child is generated
     """
 
@@ -982,6 +979,12 @@ def bfs(problem, trace=False):
             )
 
     return None
+
+'''
+run my stuff
+source .venv/bin/activate
+python3 assignment_1_students.py
+'''
 
 # ============================================================
 # NOT PROVIDED
@@ -1287,8 +1290,8 @@ OUTPUT_FILE = Path(
     "results.json"
 )
 
-
-with open(
+#remove quotes once I get here
+'''with open(
     OUTPUT_FILE,
     "w",
     encoding="utf-8",
@@ -1300,7 +1303,7 @@ with open(
         indent=2,
         ensure_ascii=False,
     )
-
+'''
 
 print()
 
