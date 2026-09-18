@@ -26,7 +26,6 @@ Original file is located at
 #
 # ============================================================
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 1. IMPORTS
@@ -60,7 +59,6 @@ EXPECTED_NUMBER_OF_CONNECTIONS = 35
 EARTH_RADIUS_KM = 6371.0
 
 EPS = 1e-12
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -112,7 +110,6 @@ def normalize_city(city):
 
     return city
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 4. CHECK FILES
@@ -128,7 +125,6 @@ if not CONNECTIONS_FILE.exists():
         "connections.csv was not found in the current working directory."
     )
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 5. LOAD DATA
@@ -141,7 +137,6 @@ cities_df = pd.read_csv(
 connections_df = pd.read_csv(
     CONNECTIONS_FILE
 )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -161,7 +156,6 @@ required_connection_columns = {
     "time_min",
 }
 
-
 missing_city_columns = (
     required_city_columns
     - set(cities_df.columns)
@@ -171,7 +165,6 @@ missing_connection_columns = (
     required_connection_columns
     - set(connections_df.columns)
 )
-
 
 if missing_city_columns:
     raise ValueError(
@@ -184,7 +177,6 @@ if missing_connection_columns:
         "connections.csv is missing required columns: "
         f"{sorted(missing_connection_columns)}"
     )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -205,7 +197,6 @@ connections_df["city_to"] = (
     connections_df["city_to"]
     .map(normalize_city)
 )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -232,7 +223,6 @@ connections_df["time_min"] = (
     .astype(float)
 )
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 9. DATASET INTEGRITY CHECKS
@@ -252,7 +242,6 @@ assert not cities_df[
     "cities.csv contains missing values."
 )
 
-
 assert not connections_df[
     [
         "city_from",
@@ -264,7 +253,6 @@ assert not connections_df[
     "connections.csv contains missing values."
 )
 
-
 # ------------------------------------------------------------
 # Positive costs
 # ------------------------------------------------------------
@@ -275,13 +263,11 @@ assert (
     "All distances must be positive."
 )
 
-
 assert (
     connections_df["time_min"] > 0
 ).all(), (
     "All travel times must be positive."
 )
-
 
 # ------------------------------------------------------------
 # Duplicate canonical city names
@@ -297,14 +283,12 @@ duplicated_cities = (
     .tolist()
 )
 
-
 if duplicated_cities:
     raise ValueError(
         "cities.csv contains duplicate cities "
         "after normalization: "
         f"{sorted(duplicated_cities)}"
     )
-
 
 # ------------------------------------------------------------
 # Every connection city must exist in cities.csv
@@ -325,14 +309,12 @@ unknown_connection_cities = (
     - known_cities
 )
 
-
 if unknown_connection_cities:
     raise ValueError(
         "connections.csv contains cities that do not "
         "exist in cities.csv after normalization: "
         f"{sorted(unknown_connection_cities)}"
     )
-
 
 # ------------------------------------------------------------
 # No self-connections
@@ -344,11 +326,9 @@ self_connections = connections_df[
     connections_df["city_to"]
 ]
 
-
 assert self_connections.empty, (
     "The dataset contains self-connections."
 )
-
 
 # ------------------------------------------------------------
 # No duplicate undirected connections
@@ -366,7 +346,6 @@ connection_pairs = connections_df.apply(
     axis=1,
 )
 
-
 duplicate_connections = (
     connection_pairs[
         connection_pairs.duplicated(
@@ -377,12 +356,10 @@ duplicate_connections = (
     .tolist()
 )
 
-
 assert not duplicate_connections, (
     "Duplicate undirected connections found: "
     f"{duplicate_connections}"
 )
-
 
 # ------------------------------------------------------------
 # Expected dataset size
@@ -394,13 +371,11 @@ assert len(cities_df) == EXPECTED_NUMBER_OF_CITIES, (
     f"found {len(cities_df)}."
 )
 
-
 assert len(connections_df) == EXPECTED_NUMBER_OF_CONNECTIONS, (
     "Unexpected number of connections. "
     f"Expected {EXPECTED_NUMBER_OF_CONNECTIONS}, "
     f"found {len(connections_df)}."
 )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -411,7 +386,6 @@ graph = {
     city: {}
     for city in cities_df["city"]
 }
-
 
 for row in connections_df.itertuples(
     index=False
@@ -436,7 +410,6 @@ for row in connections_df.itertuples(
         edge_data.copy()
     )
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 11. CITY COORDINATES
@@ -451,7 +424,6 @@ positions = {
         index=False
     )
 }
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -481,7 +453,6 @@ for city, neighbours in graph.items():
             graph[neighbour][city]["time_min"],
         )
 
-
 # ------------------------------------------------------------
 # Check graph connectivity
 # ------------------------------------------------------------
@@ -497,7 +468,6 @@ visited = {
 stack = [
     first_city
 ]
-
 
 while stack:
 
@@ -520,7 +490,6 @@ assert len(visited) == len(graph), (
     "The graph is not connected."
 )
 
-
 print(
     "Number of cities:",
     len(graph)
@@ -535,7 +504,6 @@ print(
     "Dataset loaded successfully."
 )
 
-
 print(
     "\nCanonical city identifiers:"
 )
@@ -545,7 +513,6 @@ for city in sorted(graph):
     print(
         f"  - {city}"
     )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -562,7 +529,6 @@ class Node:
     path_cost: float = 0.0
 
     depth: int = 0
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -589,7 +555,6 @@ def successors(state):
         graph[state].keys()
     )
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 15. RECONSTRUCT PATH
@@ -612,7 +577,6 @@ def reconstruct_path(node):
     return list(
         reversed(path)
     )
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -659,7 +623,6 @@ def path_metrics(path):
             float(time),
     }
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # 17. VALIDATE PATH
@@ -703,7 +666,6 @@ def validate_path(
             return False
 
     return True
-
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -808,7 +770,6 @@ def build_result(
         },
     }
 
-
 # ============================================================
 # PROVIDED TO STUDENTS
 # METRIC DEFINITIONS
@@ -848,25 +809,195 @@ def build_result(
 #
 # ============================================================
 
+import numpy as np
+'''
+Already imported files.
+cities_df = pd.read_csv(CITIES_FILE)
 
+connections_df = pd.read_csv(CONNECTIONS_FILE)
+
+I have just put in the following stuff for myself.
+'''
+def build_graph(connections_df):
+
+    graph = {}
+
+    for _, row in connections_df.iterrows():
+
+        city_a = row["city_from"]
+        city_b = row["city_to"]
+
+        costs = {
+            "distance_km": int(row["distance_km"]),
+            "time_min": int(row["time_min"])
+        }
+
+        # Bidirectional connection
+        graph.setdefault(city_a, {})[city_b] = costs
+        graph.setdefault(city_b, {})[city_a] = costs
+
+    return graph
+
+
+graph = build_graph(connections_df)
+
+def pretty_name(city):
+    return city.replace("_", " ").replace("-", " ").title()
+
+def expand(problem, node, cost="distance_km"):
+    children = []
+
+    for action in sorted(problem.actions(node.state)):
+
+        next_state = problem.result(
+            node.state,
+            action
+        )
+
+        step_cost = problem.graph[
+            node.state
+        ][next_state][cost]
+
+        child = Node(
+            state=next_state,
+            parent=node,
+            action=action,
+            path_cost=node.path_cost + step_cost,
+            depth=node.depth + 1
+        )
+
+        children.append(child)
+
+    return children
 # ============================================================
 # NOT PROVIDED
 # TASK 1 — BREADTH-FIRST SEARCH
 # ============================================================
+def bfs(problem, trace=False):
+    """
+    Selection rule: shallowest node first
 
+    Frontier: FIFO queue
 
+    Repeated states: ignored once reached
+
+    Goal test: when a child is generated
+    """
+
+    root = Node(
+        state=problem.initial_state
+    )
+
+    if problem.is_goal(root.state):
+        return build_result(
+            problem,
+            root,
+            expanded_nodes=0,
+            max_frontier=1
+        )
+
+    frontier = deque([root])
+
+    reached = {
+        root.state
+    }
+
+    expanded_nodes = 0
+    max_frontier = 1
+    step = 0
+
+    while frontier:
+
+        node = frontier.popleft()
+
+        expanded_nodes += 1
+        step += 1
+
+        if trace:
+
+            print(
+                f"\nSTEP {step}"
+            )
+
+            print(
+                "POP:",
+                pretty_name(node.state)
+            )
+
+        for child in expand(
+            problem,
+            node,
+            cost="distance_km"
+        ):
+
+            if child.state in reached:
+                continue
+
+            reached.add(child.state)
+
+            # BFS can use an early goal test.
+            if problem.is_goal(child.state):
+
+                if trace:
+                    print(
+                        "GOAL GENERATED:",
+                        pretty_name(child.state)
+                    )
+
+                max_frontier = max(
+                    max_frontier,
+                    len(frontier) + 1
+                )
+
+                return build_result(
+                    problem,
+                    child,
+                    expanded_nodes,
+                    max_frontier
+                )
+
+            frontier.append(child)
+
+        max_frontier = max(
+            max_frontier,
+            len(frontier)
+        )
+
+        if trace:
+
+            print(
+                "Frontier:",
+                [
+                    pretty_name(n.state)
+                    for n in frontier
+                ]
+            )
+
+            print(
+                "Reached:",
+                [
+                    pretty_name(s)
+                    for s in sorted(reached)
+                ]
+            )
+
+    return None
 
 # ============================================================
 # NOT PROVIDED
 # TASK 2 — DEPTH-FIRST SEARCH
 # ============================================================
-
+def depth_first_search():
+    # Implement the depth-first search algorithm here
+    pass
 
 # ============================================================
 # NOT PROVIDED
 # TASK 3 — UNIFORM-COST SEARCH
 # ============================================================
-
+def uniform_cost_search():
+    # Implement the uniform-cost search algorithm here
+    pass
 
 # ============================================================
 # PROVIDED TO STUDENTS
