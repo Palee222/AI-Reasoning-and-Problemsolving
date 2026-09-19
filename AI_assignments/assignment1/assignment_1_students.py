@@ -810,6 +810,7 @@ def build_result(
 # ============================================================
 
 import numpy as np
+from itertools import count
 '''
 Already imported files.
 cities_df = pd.read_csv(CITIES_FILE)
@@ -990,17 +991,319 @@ python3 assignment_1_students.py
 # NOT PROVIDED
 # TASK 2 — DEPTH-FIRST SEARCH
 # ============================================================
-def depth_first_search():
-    # Implement the depth-first search algorithm here
-    pass
+def path_cost(problem, path, metric):
+    """
+    Compute a path's total distance or total time
+    directly from the graph.
+    """
+
+    total = 0
+
+    for city_a, city_b in zip(
+        path[:-1],
+        path[1:]
+    ):
+        total += problem.graph[
+            city_a
+        ][city_b][metric]
+
+    return total
+
+def make_result(
+    problem,
+    node,
+    expanded_nodes,
+    max_frontier
+):
+    """
+    Create the same output structure for every algorithm.
+    """
+
+    path = successors(node)
+
+    return {
+        "path": path,
+        "actions": len(path) - 1,
+        "distance_km": path_cost(
+            problem,
+            path,
+            "distance_km"
+        ),
+        "time_min": path_cost(
+            problem,
+            path,
+            "time_min"
+        ),
+        "expanded_nodes": expanded_nodes,
+        "max_frontier": max_frontier
+    }
+    
+def dfs(problem, trace=False):
+
+    root = Node(
+        state=problem.initial_state
+    )
+
+    frontier = [root]
+
+    reached = {
+        root.state
+    }
+
+    expanded_nodes = 0
+    max_frontier = 1
+    step = 0
+
+    while frontier:
+
+        node = frontier.pop()
+
+        step += 1
+
+        if trace:
+
+            print(
+                f"\nSTEP {step}"
+            )
+
+            print(
+                "POP:",
+                pretty_name(node.state)
+            )
+
+        if problem.is_goal(node.state):
+
+            return make_result(
+                problem,
+                node,
+                expanded_nodes,
+                max_frontier
+            )
+
+        expanded_nodes += 1
+
+        children = []
+
+        for child in expand(
+            problem,
+            node,
+            cost="distance_km"
+        ):
+
+            if child.state not in reached:
+
+                reached.add(child.state)
+
+                children.append(child)
+
+        # expand() returns alphabetical order.
+        #
+        # Example:
+        #
+        # [Belgrade, Budapest, Sofia]
+        #
+        # To visit Belgrade first with a LIFO stack,
+        # push:
+        #
+        # Sofia, Budapest, Belgrade
+
+        for child in reversed(children):
+            frontier.append(child)
+
+        max_frontier = max(
+            max_frontier,
+            len(frontier)
+        )
+
+        if trace:
+
+            print(
+                "Frontier:",
+                [
+                    pretty_name(n.state)
+                    for n in reversed(frontier)
+                ]
+            )
+
+            print(
+                "Reached:",
+                [
+                    pretty_name(s)
+                    for s in sorted(reached)
+                ]
+            )
+
+    return None
 
 # ============================================================
 # NOT PROVIDED
 # TASK 3 — UNIFORM-COST SEARCH
 # ============================================================
-def uniform_cost_search():
-    # Implement the uniform-cost search algorithm here
-    pass
+def ucs(
+    problem,
+    cost="distance_km",
+    trace=False
+):
+    """
+    Uniform-Cost Search.
+
+    Selection rule:
+        lowest accumulated path cost g(n)
+
+    Frontier:
+        priority queue
+
+    A state can be reached again if the new route
+    is cheaper.
+
+    Goal test:
+        when the node is popped from the frontier
+    """
+
+    if cost not in {
+        "distance_km",
+        "time_min"
+    }:
+        raise ValueError(
+            "cost must be 'distance_km' or 'time_min'"
+        )
+
+    root = Node(
+        state=problem.initial_state,
+        path_cost=0
+    )
+
+    tie_breaker = count()
+
+    frontier = []
+
+    heapq.heappush(
+        frontier,
+        (
+            0,
+            next(tie_breaker),
+            root
+        )
+    )
+
+    # reached[state] contains the cheapest
+    # path cost discovered so far.
+    reached = {
+        root.state: 0
+    }
+
+    expanded_nodes = 0
+    max_frontier = 1
+    step = 0
+
+    while frontier:
+
+        current_cost, _, node = heapq.heappop(
+            frontier
+        )
+
+        # There may be an older, more expensive entry
+        # for the same state still inside the heap.
+        #
+        # If so, ignore it.
+        if current_cost != reached.get(node.state):
+            continue
+
+        step += 1
+
+        if trace:
+
+            print(
+                f"\nSTEP {step}"
+            )
+
+            print(
+                f"POP: {pretty_name(node.state)} "
+                f"g={current_cost}"
+            )
+
+        # UCS uses a late goal test.
+        #
+        # A generated goal is not necessarily optimal.
+        # A goal popped with minimum g(n) is optimal.
+        if problem.is_goal(node.state):
+
+            return make_result(
+                problem,
+                node,
+                expanded_nodes,
+                max_frontier
+            )
+
+        expanded_nodes += 1
+
+        for child in expand(
+            problem,
+            node,
+            cost=cost
+        ):
+
+            child_cost = child.path_cost
+
+            # Keep the child if:
+            #
+            # 1. we have never reached this state, or
+            # 2. this is a cheaper path to the state.
+
+            if (
+                child.state not in reached
+                or
+                child_cost < reached[child.state]
+            ):
+
+                reached[child.state] = child_cost
+
+                heapq.heappush(
+                    frontier,
+                    (
+                        child_cost,
+                        next(tie_breaker),
+                        child
+                    )
+                )
+
+        max_frontier = max(
+            max_frontier,
+            len(frontier)
+        )
+
+        if trace:
+
+            active_frontier = []
+
+            for g, _, n in frontier:
+
+                if reached.get(n.state) == g:
+
+                    active_frontier.append(
+                        (
+                            g,
+                            pretty_name(n.state)
+                        )
+                    )
+
+            active_frontier.sort()
+
+            print(
+                "Frontier:",
+                active_frontier
+            )
+
+            print(
+                "Reached:",
+                {
+                    pretty_name(s): g
+                    for s, g
+                    in sorted(reached.items())
+                }
+            )
+
+    return None
 
 # ============================================================
 # PROVIDED TO STUDENTS
