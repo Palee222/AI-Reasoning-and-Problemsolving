@@ -1328,19 +1328,62 @@ def ucs(
 # Angles must be converted from degrees to radians.
 #
 # ============================================================
-
+import math
 
 # ============================================================
 # NOT PROVIDED
 # TASK 4 — HAVERSINE IMPLEMENTATION
 # ============================================================
+coordinates = {
+    row["city"]: (
+        float(row["latitude"]),
+        float(row["longitude"])
+    )
+    for _, row in CITIES_FILE.iterrows()
+}
+def haversine(lat1, lon1, lat2, lon2):
 
+
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        +
+        math.cos(phi1)
+        * math.cos(phi2)
+        * math.sin(delta_lambda / 2) ** 2
+    )
+
+    c = 2 * math.atan2(
+        math.sqrt(a),
+        math.sqrt(1 - a)
+    )
+
+    return EARTH_RADIUS_KM * c
 
 # ============================================================
 # NOT PROVIDED
 # TASK 4 — DISTANCE HEURISTIC
 # ============================================================
+def h_distance(state, goal="rome"):
 
+    lat1, lon1 = coordinates[state]
+    lat2, lon2 = coordinates[goal]
+
+    return haversine(
+        lat1,
+        lon1,
+        lat2,
+        lon2
+    )
+
+print("h(Bucharest) =", round(h_distance("bucharest", "rome"), 2), "km")
+
+print("h(Rome) =", round(h_distance("rome", "rome"), 2), "km")
 
 # ============================================================
 # PROVIDED TO STUDENTS
@@ -1362,14 +1405,141 @@ def ucs(
 # NOT PROVIDED
 # TASK 5 — TIME HEURISTIC IMPLEMENTATION
 # ============================================================
+def heuristic(state, goal="rome"):
 
+    max_speed = connections_df["distance_km"].max() / connections_df["time_min"].min()
+
+    return h_distance(state, goal) / max_speed
 
 
 # ============================================================
 # NOT PROVIDED
 # TASK 6 — A*
 # ============================================================
+def astar(problem, heuristic, cost="distance_km", trace=False):
 
+    root = Node(state=problem.initial_state, path_cost=0)
+
+    tie_breaker = count()
+
+    frontier = []
+
+    root_h = heuristic(root.state)
+
+    heapq.heappush(frontier,(root.path_cost + root_h, next(tie_breaker), root))
+
+    # reached[state] = cheapest g(n) discovered so far
+    reached = {root.state: 0}
+
+    expanded_nodes = 0
+    max_frontier = 1
+    step = 0
+
+    while frontier:
+        f_value, _, node = heapq.heappop(frontier)
+
+        # Ignore obsolete, more expensive paths.
+        if (node.path_cost!=reached.get(node.state)):
+            continue
+
+        step += 1
+
+        h_value = heuristic(node.state)
+
+        if trace:
+            print(f"\nSTEP {step}")
+
+            print(
+                f"POP: {pretty_name(node.state)} "
+                f"g={node.path_cost:.2f} "
+                f"h={h_value:.2f} "
+                f"f={f_value:.2f}"
+            )
+
+        if problem.is_goal(node.state):
+
+            return make_result(
+                problem,
+                node,
+                expanded_nodes,
+                max_frontier
+            )
+
+        expanded_nodes += 1
+
+        for child in expand(
+            problem,
+            node,
+            cost=cost
+        ):
+
+            child_g = (
+                child.path_cost
+            )
+
+            if (
+                child.state not in reached
+                or
+                child_g
+                <
+                reached[child.state]
+            ):
+
+                reached[
+                    child.state
+                ] = child_g
+
+                child_h = heuristic(
+                    child.state
+                )
+
+                child_f = (
+                    child_g
+                    +
+                    child_h
+                )
+
+                heapq.heappush(
+                    frontier,
+                    (
+                        child_f,
+                        next(tie_breaker),
+                        child
+                    )
+                )
+
+        max_frontier = max(
+            max_frontier,
+            len(frontier)
+        )
+
+        if trace:
+
+            active_frontier = []
+
+            for f, _, n in frontier:
+
+                if (
+                    reached.get(n.state)
+                    ==
+                    n.path_cost
+                ):
+
+                    active_frontier.append(
+                        (
+                            round(f, 2),
+                            pretty_name(n.state)
+                        )
+                    )
+
+            active_frontier.sort()
+
+            print(
+                "Frontier:",
+                active_frontier
+            )
+
+    return None
 
 
 # ============================================================
@@ -1645,4 +1815,3 @@ print(
     "results.json matches the results "
     "generated by the notebook."
 )
-
