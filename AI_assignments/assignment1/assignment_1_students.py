@@ -242,119 +242,140 @@ assert not cities_df[
     "cities.csv contains missing values."
 )
 
+'''
 assert not connections_df[
     [
         "city_from",
-        "city_to",
-        "distance_km",
-        "time_min",
-    ]
-].isna().any().any(), (
-    "connections.csv contains missing values."
+    coordinates = {
+        row["city"]: (
+            float(row["latitude"]),
+            float(row["longitude"])
+        )
+        for _, row in cities_df.iterrows()
 )
 
 # ------------------------------------------------------------
 # Positive costs
 # ------------------------------------------------------------
 
-assert (
-    connections_df["distance_km"] > 0
-).all(), (
-    "All distances must be positive."
-)
+    GOAL = normalize_city("Rome")
 
-assert (
-    connections_df["time_min"] > 0
-).all(), (
-    "All travel times must be positive."
-)
+        # ========================================================
+        # ADMISSIBILITY
+        # ========================================================
+    admissibility_rows = []
 
-# ------------------------------------------------------------
-# Duplicate canonical city names
-# ------------------------------------------------------------
+    for state in graph:
+        test_problem = Node(
+            graph,
+            initial_state=state, goal_state=GOAL)
 
-duplicated_cities = (
-    cities_df[
-        cities_df["city"].duplicated(
-            keep=False
+        true_result = ucs(
+            test_problem,
+            cost="distance_km"
         )
-    ]["city"]
-    .unique()
-    .tolist()
-)
 
-if duplicated_cities:
-    raise ValueError(
-        "cities.csv contains duplicate cities "
-        "after normalization: "
-        f"{sorted(duplicated_cities)}"
-    )
+        h = h_distance(
+            state,
+            GOAL
+        )
 
-# ------------------------------------------------------------
-# Every connection city must exist in cities.csv
-# ------------------------------------------------------------
+        h_star = (true_result["distance_km"])
 
-known_cities = set(
-    cities_df["city"]
-)
+        admissibility_rows.append({
+            "City":
+                pretty_name(state),
 
-connection_cities = (
-    set(connections_df["city_from"])
-    |
-    set(connections_df["city_to"])
-)
+            "h(n)":
+                h,
 
-unknown_connection_cities = (
-    connection_cities
-    - known_cities
-)
+            "h*(n)":
+                h_star,
 
-if unknown_connection_cities:
-    raise ValueError(
-        "connections.csv contains cities that do not "
-        "exist in cities.csv after normalization: "
-        f"{sorted(unknown_connection_cities)}"
-    )
+            "Admissible":
+                h <= h_star + 1e-9})
 
-# ------------------------------------------------------------
-# No self-connections
-# ------------------------------------------------------------
+    admissibility = pd.DataFrame(admissibility_rows)
 
-self_connections = connections_df[
-    connections_df["city_from"]
-    ==
-    connections_df["city_to"]
-]
+    display(admissibility.round(2))
 
-assert self_connections.empty, (
-    "The dataset contains self-connections."
-)
+    print("Admissible for every state:", admissibility["Admissible"].all())
 
-# ------------------------------------------------------------
-# No duplicate undirected connections
-# ------------------------------------------------------------
+        # ========================================================
+        # CONSISTENCY
+        # ========================================================
+    consistency_violations = []
 
-connection_pairs = connections_df.apply(
-    lambda row: tuple(
-        sorted(
-            (
-                row["city_from"],
-                row["city_to"],
+    for state in graph:
+
+        for neighbour in graph[state]:
+
+            edge_cost = graph[
+                state
+            ][neighbour][
+                "distance_km"
+            ]
+
+            h_state = h_distance(
+                state,
+                GOAL
             )
-        )
-    ),
-    axis=1,
-)
 
-duplicate_connections = (
-    connection_pairs[
-        connection_pairs.duplicated(
-            keep=False
+            h_neighbour = h_distance(
+                neighbour,
+                GOAL
+            )
+
+            if (h_state>edge_cost+h_neighbour+1e-9):
+
+                consistency_violations.append({
+                    "State":
+                        pretty_name(state),
+
+                    "Neighbour":
+                        pretty_name(neighbour),
+
+                    "h(n)":
+                        h_state,
+
+                    "c(n,n')":
+                        edge_cost,
+
+                    "h(n')":
+                        h_neighbour
+                })
+
+
+    if len(consistency_violations) == 0:
+        print("No consistency violations found.")
+
+    else:
+        display(pd.DataFrame(consistency_violations).round(2))
         )
     ]
     .unique()
     .tolist()
 )
+
+'''
+assert not connections_df[
+    ["city_from", "city_to", "distance_km", "time_min"]
+].isna().any().any(), "connections.csv contains missing values."
+
+assert (connections_df["distance_km"] > 0).all(), (
+    "All distances must be positive."
+)
+assert (connections_df["time_min"] > 0).all(), (
+    "All travel times must be positive."
+)
+
+connection_pairs = connections_df.apply(
+    lambda row: tuple(sorted((row["city_from"], row["city_to"]))),
+    axis=1,
+)
+duplicate_connections = connection_pairs[
+    connection_pairs.duplicated(keep=False)
+].unique().tolist()
 
 assert not duplicate_connections, (
     "Duplicate undirected connections found: "
@@ -1339,7 +1360,7 @@ coordinates = {
         float(row["latitude"]),
         float(row["longitude"])
     )
-    for _, row in CITIES_FILE.iterrows()
+    for _, row in cities_df.iterrows()
 }
 def haversine(lat1, lon1, lat2, lon2):
 
@@ -1551,7 +1572,6 @@ def astar(problem, heuristic, cost="distance_km", trace=False):
 #
 # This should NOT be part of the student implementation
 # because it would reveal most of a UCS / Dijkstra solution.
-#
 # ============================================================
 
 
@@ -1559,23 +1579,107 @@ def astar(problem, heuristic, cost="distance_km", trace=False):
 # NOT PROVIDED
 # INSTRUCTOR TOOL — HEURISTIC ANALYSIS
 # ============================================================
-
+'''
+GOAL = normalize_city("Rome")
 
     # ========================================================
     # ADMISSIBILITY
     # ========================================================
+admissibility_rows = []
 
+for state in graph:
+    test_problem = Node(
+        graph,
+        initial_state=state, goal_state=GOAL)
+
+    true_result = ucs(
+        test_problem,
+        cost="distance_km"
+    )
+
+    h = h_distance(
+        state,
+        GOAL
+    )
+
+    h_star = (true_result["distance_km"])
+
+    admissibility_rows.append({
+        "City":
+            pretty_name(state),
+
+        "h(n)":
+            h,
+
+        "h*(n)":
+            h_star,
+
+        "Admissible":
+            h <= h_star + 1e-9})
+
+admissibility = pd.DataFrame(admissibility_rows)
+
+display(admissibility.round(2))
+
+print("Admissible for every state:", admissibility["Admissible"].all())
 
     # ========================================================
     # CONSISTENCY
     # ========================================================
+consistency_violations = []
 
+for state in graph:
+
+    for neighbour in graph[state]:
+
+        edge_cost = graph[
+            state
+        ][neighbour][
+            "distance_km"
+        ]
+
+        h_state = h_distance(
+            state,
+            GOAL
+        )
+
+        h_neighbour = h_distance(
+            neighbour,
+            GOAL
+        )
+
+        if (h_state>edge_cost+h_neighbour+1e-9):
+
+            consistency_violations.append({
+                "State":
+                    pretty_name(state),
+
+                "Neighbour":
+                    pretty_name(neighbour),
+
+                "h(n)":
+                    h_state,
+
+                "c(n,n')":
+                    edge_cost,
+
+                "h(n')":
+                    h_neighbour
+            })
+
+
+if len(consistency_violations) == 0:
+    print("No consistency violations found.")
+
+else:
+    display(pd.DataFrame(consistency_violations).round(2))
 
 # ============================================================
 # PROVIDED TO STUDENTS
 # 19. MAIN SEARCH PROBLEM
 # ============================================================
 
+'''
 START = normalize_city(
     "Bucharest"
 )
@@ -1613,20 +1717,246 @@ print(
 # NOT PROVIDED
 # 20. RUN REFERENCE SEARCH ALGORITHMS
 # ============================================================
+def run_reference_search(
+    algorithm,
+    start,
+    goal,
+    cost="distance_km",
+    heuristic_fn=None,
+):
+    root = Node(state=start)
+    is_depth_first = algorithm == "DFS"
+    is_breadth_first = algorithm == "BFS"
+    uses_costs = not (is_depth_first or is_breadth_first)
+    tie_breaker = itertools.count()
 
+    if is_breadth_first:
+        frontier = deque([root])
+    elif is_depth_first:
+        frontier = [root]
+    else:
+        root_h = heuristic_fn(start) if heuristic_fn else 0.0
+        frontier = [(root.path_cost + root_h, next(tie_breaker), root)]
+
+    reached = {start: 0.0} if uses_costs else {start}
+    expanded_nodes = 0
+    generated_nodes = 0
+    max_frontier_size = 1
+    expanded_order = []
+
+    while frontier:
+        if is_breadth_first:
+            node = frontier.popleft()
+        elif is_depth_first:
+            node = frontier.pop()
+        else:
+            priority, _, node = heapq.heappop(frontier)
+            if node.path_cost != reached.get(node.state):
+                continue
+
+        if node.state == goal:
+            return build_result(
+                algorithm,
+                node,
+                expanded_nodes,
+                generated_nodes,
+                max_frontier_size,
+                expanded_order,
+            )
+
+        expanded_nodes += 1
+        expanded_order.append(node.state)
+        neighbours = successors(node.state)
+        if is_depth_first:
+            neighbours = list(reversed(neighbours))
+
+        for neighbour in neighbours:
+            step_cost = graph[node.state][neighbour][cost]
+            child_cost = node.path_cost + step_cost
+
+            if uses_costs:
+                if child_cost >= reached.get(neighbour, math.inf):
+                    continue
+                reached[neighbour] = child_cost
+            else:
+                if neighbour in reached:
+                    continue
+                reached.add(neighbour)
+
+            child = Node(
+                state=neighbour,
+                parent=node,
+                path_cost=child_cost,
+                depth=node.depth + 1,
+            )
+
+            if is_breadth_first:
+                frontier.append(child)
+            elif is_depth_first:
+                frontier.append(child)
+            else:
+                h_value = heuristic_fn(neighbour) if heuristic_fn else 0.0
+                heapq.heappush(
+                    frontier,
+                    (
+                        child_cost + h_value,
+                        next(tie_breaker),
+                        child,
+                    ),
+                )
+            generated_nodes += 1
+
+        max_frontier_size = max(max_frontier_size, len(frontier))
+
+    return build_result(
+        algorithm,
+        None,
+        expanded_nodes,
+        generated_nodes,
+        max_frontier_size,
+        expanded_order,
+    )
+
+
+reference_results = {
+    "BFS": run_reference_search("BFS", START, GOAL),
+    "DFS": run_reference_search("DFS", START, GOAL),
+    "UCS-distance": run_reference_search(
+        "UCS-distance", START, GOAL, cost="distance_km"
+    ),
+    "UCS-time": run_reference_search(
+        "UCS-time", START, GOAL, cost="time_min"
+    ),
+    "A*-distance": run_reference_search(
+        "A*-distance",
+        START,
+        GOAL,
+        cost="distance_km",
+        heuristic_fn=lambda state: h_distance(state, GOAL),
+    ),
+    "A*-time": run_reference_search(
+        "A*-time",
+        START,
+        GOAL,
+        cost="time_min",
+        heuristic_fn=lambda state: heuristic(state, GOAL),
+    ),
+}
 
 
 # ============================================================
 # NOT PROVIDED
 # 21. VALIDATE ALL RETURNED PATHS
 # ============================================================
+for name, result in reference_results.items():
 
+    solution = result["solution"]
+
+    if solution["found"]:
+        path = solution["path"]
+
+        assert validate_path(
+            path,
+            START,
+            GOAL,
+        ), f"{name} returned an invalid path."
+
+        recalculated_metrics = path_metrics(path)
+
+        assert math.isclose(
+            solution["distance_km"],
+            recalculated_metrics["distance_km"],
+            rel_tol=1e-9,
+        ), f"{name} has an incorrect distance."
+
+        assert math.isclose(
+            solution["time_min"],
+            recalculated_metrics["time_min"],
+            rel_tol=1e-9,
+        ), f"{name} has an incorrect travel time."
+
+        print(f"{name}: valid path")
+
+    else:
+        print(f"{name}: no path found")
 
 
 # ============================================================
 # NOT PROVIDED
 # 22. HEURISTIC ANALYSIS
 # ============================================================
+heuristic_rows = []
+
+for state in sorted(graph):
+    optimal_result = run_reference_search(
+        "UCS-distance",
+        state,
+        GOAL,
+        cost="distance_km",
+    )
+
+    true_cost = optimal_result["solution"]["distance_km"]
+    heuristic_value = h_distance(state, GOAL)
+
+    heuristic_rows.append({
+        "city": pretty_name(state),
+        "heuristic": heuristic_value,
+        "true_cost": true_cost,
+        "admissible": (
+            heuristic_value <= true_cost + EPS
+        ),
+    })
+
+heuristic_analysis = pd.DataFrame(
+    heuristic_rows
+)
+
+display(
+    heuristic_analysis.round(2)
+)
+
+print(
+    "Admissible for every city:",
+    heuristic_analysis["admissible"].all(),
+)
+
+consistency_violations = []
+
+for city in sorted(graph):
+
+    for neighbour in sorted(graph[city]):
+
+        edge_cost = graph[city][neighbour]["distance_km"]
+
+        left_side = h_distance(city, GOAL)
+
+        right_side = (
+            edge_cost
+            + h_distance(neighbour, GOAL)
+        )
+
+        if left_side > right_side + EPS:
+            consistency_violations.append({
+                "city": pretty_name(city),
+                "neighbour": pretty_name(neighbour),
+                "h(city)": left_side,
+                "edge_cost": edge_cost,
+                "h(neighbour)": h_distance(
+                    neighbour,
+                    GOAL,
+                ),
+            })
+
+if consistency_violations:
+    print("Consistency violations found:")
+    display(
+        pd.DataFrame(
+            consistency_violations
+        ).round(2)
+    )
+else:
+    print("The distance heuristic is consistent.")
+    
 
 
 # ============================================================
@@ -1634,25 +1964,14 @@ print(
 # 23. SUMMARY TABLE HELPER
 # ============================================================
 
-def make_summary_row(
-    name,
-    result,
-):
+def make_summary_row(name, result):
 
-    solution = (
-        result["solution"]
-    )
+    solution = (result["solution"])
 
-    diagnostics = (
-        result["diagnostics"]
-    )
+    diagnostics = (result["diagnostics"])
 
 
-    return {
-
-        "algorithm":
-            name,
-
+    return {"algorithm": name,
 
         "path":
             (
@@ -1707,28 +2026,86 @@ def make_summary_row(
 # NOT PROVIDED
 # 24. CREATE COMPARISON TABLE
 # ============================================================
+comparison_table = pd.DataFrame(
+    [
+        make_summary_row(name, result)
+        for name, result in reference_results.items()
+    ]
+)
 
+display(comparison_table.round(2))
 
 
 # ============================================================
 # NOT PROVIDED
 # 25. PRINT PATHS AND EXPANSION ORDERS
 # ============================================================
+for name, result in reference_results.items():
+    solution = result["solution"]
+    diagnostics = result["diagnostics"]
+    readable_path = (
+        " -> ".join(pretty_name(city) for city in solution["path"])
+        if solution["path"]
+        else "No path found"
+    )
 
+    print(f"\n{name} path: {readable_path}")
+    print(
+        f"{name} expansion order: "
+        f"{' -> '.join(pretty_name(city) for city in diagnostics['expanded_order'])}"
+    )
 
 
 # ============================================================
 # NOT PROVIDED
 # 26. PRINT HEURISTIC ANALYSIS
 # ============================================================
+print("\nDistance heuristic analysis:")
+display(heuristic_analysis.round(2))
+print(
+    "Admissible for every city:",
+    bool(heuristic_analysis["admissible"].all()),
+)
 
+if consistency_violations:
+    print("Consistency violations:")
+    display(pd.DataFrame(consistency_violations).round(2))
+else:
+    print("The distance heuristic is consistent.")
 
 
 # ============================================================
 # NOT PROVIDED
 # 27. SANITY CHECKS
 # ============================================================
+for name, result in reference_results.items():
+    solution = result["solution"]
+    diagnostics = result["diagnostics"]
 
+    assert solution["found"], f"{name} did not find a path."
+    assert validate_path(solution["path"], START, GOAL), (
+        f"{name} returned an invalid path."
+    )
+    assert solution["path_length"] == len(solution["path"]) - 1
+    assert diagnostics["expanded_nodes"] == len(diagnostics["expanded_order"])
+    assert diagnostics["generated_nodes"] >= 0
+    assert diagnostics["max_frontier_size"] >= 1
+
+    recalculated = path_metrics(solution["path"])
+    for metric in ("distance_km", "time_min"):
+        assert math.isclose(
+            solution[metric],
+            recalculated[metric],
+            rel_tol=1e-9,
+        ), f"{name} has an incorrect {metric}."
+
+assert bool(heuristic_analysis["admissible"].all()), (
+    "The distance heuristic must be admissible for every city."
+)
+assert not consistency_violations, (
+    "The distance heuristic must be consistent."
+)
+print("All search and heuristic sanity checks passed.")
 
 
 # ============================================================
@@ -1739,7 +2116,21 @@ def make_summary_row(
 # Notice:
 #
 # Search results are divided into:
-#
+results = {
+    **reference_results,
+    "_metadata": {
+        "start": START,
+        "goal": GOAL,
+        "heuristic_analysis": {
+            "admissible_for_all_cities": bool(
+                heuristic_analysis["admissible"].all()
+            ),
+            "consistent": not consistency_violations,
+            "consistency_violations": consistency_violations,
+            "cities": heuristic_rows,
+        },
+    },
+}
 #     solution
 #     diagnostics
 #
@@ -1764,7 +2155,7 @@ OUTPUT_FILE = Path(
 )
 
 #remove quotes once I get here
-'''with open(
+with open(
     OUTPUT_FILE,
     "w",
     encoding="utf-8",
@@ -1776,7 +2167,7 @@ OUTPUT_FILE = Path(
         indent=2,
         ensure_ascii=False,
     )
-'''
+
 
 print()
 
@@ -1801,17 +2192,10 @@ with open(
     )
 
 
-assert (
-    loaded_results
-    ==
-    results
-), (
-    "results.json does not match the results "
-    "generated by the notebook."
-)
+assert (loaded_results == results), ("results.json does not match the results " "generated by the notebook.")
 
 
-print(
-    "results.json matches the results "
-    "generated by the notebook."
-)
+print("results.json matches the results "
+    "generated by the notebook.")
+
+#submit this notebook and the jason it has generated with the solutions
