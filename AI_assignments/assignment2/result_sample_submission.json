@@ -1,0 +1,60 @@
+{
+  "backtracking": {
+    "solution": {
+      "L1": null,
+      "L2": null,
+      "L3": null,
+      "C1": null,
+      "C2": null,
+      "C3": null,
+      "D1": null,
+      "D2": null,
+      "T1": null,
+      "T2": null,
+      "T3": null,
+      "S1": null
+    },
+    "valid": null,
+    "assignments": null,
+    "backtracks": null
+  },
+  "improved_backtracking": {
+    "solution": {
+      "L1": null,
+      "L2": null,
+      "L3": null,
+      "C1": null,
+      "C2": null,
+      "C3": null,
+      "D1": null,
+      "D2": null,
+      "T1": null,
+      "T2": null,
+      "T3": null,
+      "S1": null
+    },
+    "valid": null,
+    "assignments": null,
+    "backtracks": null
+  },
+  "min_conflicts": {
+    "solution": {
+      "L1": null,
+      "L2": null,
+      "L3": null,
+      "C1": null,
+      "C2": null,
+      "C3": null,
+      "D1": null,
+      "D2": null,
+      "T1": null,
+      "T2": null,
+      "T3": null,
+      "S1": null
+    },
+    "valid": null,
+    "steps": null,
+    "restarts": null,
+    "final_conflicts": null
+  }
+}
