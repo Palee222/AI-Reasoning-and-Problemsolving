@@ -146,6 +146,9 @@ print("Worked example checks passed.")
 # For reproducibility, min-conflicts should use `rng = random.Random(seed)` and honour `max_steps` **per attempt** and `max_restarts` **additional attempts**. Break ties using `rng.choice`. Different correct implementations may report different numbers; grading does not require the instructor's exact metric values.
 #
 # **Plain backtracking:** assign variables in the order of `problem["variables"]`. **Improved backtracking:** choose the smallest remaining domain (MRV), breaking ties by that same variable order; after each assignment, filter all unassigned domains (forward checking). **Min-conflicts:** start with a complete assignment, select a variable in a violated rule, and change its value to minimise the number of violated rules touching that variable; restart if needed.
+'''
+Student version from here: 
+'''
 
 def _rules_by_variable(problem):
     index = {name: [] for name in problem["variables"]}
@@ -191,15 +194,113 @@ def plain_backtracking(problem):
 
 def improved_backtracking(problem):
     """Return (solution, {"assignments": int, "backtracks": int})."""
-    # TODO: implement MRV with forward checking and reversible domain copies.
-    raise NotImplementedError("Implement improved_backtracking")
+    variables = problem["variables"]
+    order = {v: i for i, v in enumerate(variables)}
+    rules_of = _rules_by_variable(problem)
+    stats = {"assignments": 0, "backtracks": 0}
+    assignment = {}
+
+    def solve(domains):
+        if len(assignment) == len(variables):
+            return True
+        # MRV: smallest remaining domain, ties broken by variable-list order
+        var = min((v for v in variables if v not in assignment),
+                  key=lambda v: (len(domains[v]), order[v]))
+        for value in list(domains[var]):
+            stats["assignments"] += 1
+            assignment[var] = value
+            # Reversible domain copy, so the caller's domains are never altered
+            new_domains = {k: list(d) for k, d in domains.items()}
+            new_domains[var] = [value]
+
+            wipeout = False
+            for rule in rules_of[var]:
+                var_is_left = rule["left"] == var
+                other = rule["right"] if var_is_left else rule["left"]
+                if other in assignment:
+                    continue
+                if var_is_left:
+                    keep = [w for w in new_domains[other]
+                            if rule_holds(rule, value, w)]
+                else:
+                    keep = [w for w in new_domains[other]
+                            if rule_holds(rule, w, value)]
+                new_domains[other] = keep
+                if not keep:            # forward-checking domain wipeout
+                    wipeout = True
+                    break
+
+            if not wipeout and solve(new_domains):
+                return True
+            stats["backtracks"] += 1    # wipeout or failed subtree
+            del assignment[var]
+        return False
+
+    start = {v: list(problem["domains"][v]) for v in variables}
+    if solve(start):
+        return {v: assignment[v] for v in variables}, stats
+    return None, stats
 
 
 def min_conflicts(problem, seed=202610, max_steps=1000, max_restarts=100):
     """Return (solution, {"steps": int, "restarts": int,
                           "final_conflicts": int})."""
-    # TODO: use a local rng; start with complete assignments; repair conflicts.
-    raise NotImplementedError("Implement min_conflicts")
+    variables = problem["variables"]
+    domains = problem["domains"]
+    constraints = problem["constraints"]
+    rules_of = _rules_by_variable(problem)
+    rng = random.Random(seed)
+    stats = {"steps": 0, "restarts": 0, "final_conflicts": 0}
+
+    def local_conflicts(var, assignment):
+        return sum(
+            not rule_holds(r, assignment[r["left"]], assignment[r["right"]])
+            for r in rules_of[var]
+        )
+
+    def conflicted_vars(assignment):
+        bad = set()
+        for r in constraints:
+            if not rule_holds(r, assignment[r["left"]], assignment[r["right"]]):
+                bad.add(r["left"])
+                bad.add(r["right"])
+        return [v for v in variables if v in bad]   # fixed order for rng.choice
+
+    best, best_score = None, None
+    for attempt in range(max_restarts + 1):
+        if attempt > 0:
+            stats["restarts"] += 1
+        # New random complete configuration (respecting each domain)
+        assignment = {v: rng.choice(domains[v]) for v in variables}
+
+        for _ in range(max_steps):
+            bad = conflicted_vars(assignment)
+            if not bad:
+                break
+            var = rng.choice(bad)
+            old = assignment[var]
+            scores = {}
+            for value in domains[var]:
+                assignment[var] = value
+                scores[value] = local_conflicts(var, assignment)
+            assignment[var] = old
+            low = min(scores.values())
+            new_value = rng.choice([v for v in domains[var] if scores[v] == low])
+            if new_value != old:
+                assignment[var] = new_value
+                stats["steps"] += 1
+
+        score = count_conflicts(problem, assignment)
+        if best is None or score < best_score:
+            best, best_score = dict(assignment), score
+        if score == 0:
+            break
+
+    stats["final_conflicts"] = best_score
+    return best, stats
+'''
+Until here.
+'''
 
 
 # ## 4. Self-check, run and export

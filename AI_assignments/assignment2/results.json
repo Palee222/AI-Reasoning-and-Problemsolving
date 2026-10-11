@@ -1,0 +1,60 @@
+{
+  "backtracking": {
+    "solution": {
+      "L1": 3,
+      "L2": 1,
+      "L3": 2,
+      "C1": 2,
+      "C2": 3,
+      "C3": 2,
+      "D1": 1,
+      "D2": 1,
+      "T1": 1,
+      "T2": 4,
+      "T3": 2,
+      "S1": 2
+    },
+    "valid": true,
+    "assignments": 74,
+    "backtracks": 17
+  },
+  "improved_backtracking": {
+    "solution": {
+      "L1": 3,
+      "L2": 1,
+      "L3": 2,
+      "C1": 2,
+      "C2": 3,
+      "C3": 2,
+      "D1": 1,
+      "D2": 1,
+      "T1": 1,
+      "T2": 4,
+      "T3": 2,
+      "S1": 2
+    },
+    "valid": true,
+    "assignments": 13,
+    "backtracks": 1
+  },
+  "min_conflicts": {
+    "solution": {
+      "L1": 3,
+      "L2": 1,
+      "L3": 2,
+      "C1": 2,
+      "C2": 3,
+      "C3": 2,
+      "D1": 1,
+      "D2": 1,
+      "T1": 1,
+      "T2": 4,
+      "T3": 2,
+      "S1": 2
+    },
+    "valid": true,
+    "steps": 12,
+    "restarts": 0,
+    "final_conflicts": 0
+  }
+}
